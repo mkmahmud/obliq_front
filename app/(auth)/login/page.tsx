@@ -1,8 +1,6 @@
 "use client";
-import { ArrowRight, Eye } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import {
     Card,
     CardContent,
@@ -11,16 +9,18 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { LoginForm } from "@/components/forms/auth/login-form";
 import Image from "next/image";
 
 export default function Login() {
     const [imageLoaded, setImageLoaded] = useState(false);
 
     useEffect(() => {
-        setImageLoaded(true);
+        const timer = window.setTimeout(() => {
+            setImageLoaded(true);
+        }, 50);
+
+        return () => window.clearTimeout(timer);
     }, []);
 
     return (
@@ -45,48 +45,7 @@ export default function Login() {
                         </CardHeader>
 
                         <CardContent>
-                            <form className="space-y-5">
-                                <div className="space-y-2.5">
-                                    <Label htmlFor="email" className="text-sm font-medium text-[#646B78]">
-                                        Email
-                                    </Label>
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        placeholder="example@email.com"
-                                        className="h-11 rounded-xl border-[#E7E8EB] bg-white text-sm"
-                                    />
-                                </div>
-
-                                <div className="space-y-2.5">
-                                    <Label htmlFor="password" className="text-sm font-medium text-[#646B78]">
-                                        Password
-                                    </Label>
-                                    <div className="relative">
-                                        <Input
-                                            id="password"
-                                            type="password"
-                                            placeholder="Enter your password"
-                                            className="h-11 rounded-xl border-[#E7E8EB] pr-11 text-sm"
-                                        />
-                                        <Eye className="pointer-events-none absolute top-1/2 right-3.5 size-4 -translate-y-1/2 text-[#B6BBC6]" />
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center justify-between text-sm">
-                                    <label className="flex items-center gap-2 text-[#9AA0AB]">
-                                        <Checkbox className="size-3.5   border-[#D6DAE2]" />
-                                        <span>Remember me</span>
-                                    </label>
-                                    <button type="button" className="font-medium text-[#FF6A3D]">
-                                        Forgot password?
-                                    </button>
-                                </div>
-
-                                <Button className="  rounded-lg   border border-transparent bg-primary text-primary-foreground transition-colors hover:bg-white hover:text-primary hover:border-primary text-base py-5" >
-                                    <span className="transition-transform duration-200 group-hover/button:-translate-x-[4px]">Log in </span> <ArrowRight className="size-4" />
-                                </Button>
-                            </form>
+                            <LoginForm />
                         </CardContent>
 
                         <CardFooter className="justify-center pt-6 text-sm text-gray">
