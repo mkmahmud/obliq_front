@@ -36,6 +36,25 @@ export type RegisterResponse = {
     };
 };
 
+export type AuthMeResponse = {
+    message: string;
+    data: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        email: string;
+        role: string;
+        [key: string]: unknown;
+    };
+};
+
+export type AuthPermissionsResponse = {
+    message: string;
+    data: {
+        permissions: string[];
+    };
+};
+
 export function createAuthApi(api: BaseApi = baseApi) {
     return {
         login: async (payload: LoginPayload) => {
@@ -52,6 +71,20 @@ export function createAuthApi(api: BaseApi = baseApi) {
 
         register: async (payload: RegisterPayload) => {
             const response = await api.post<RegisterResponse>("/auth/register", payload, {
+                withCredentials: true,
+            });
+            return response.data;
+        },
+
+        me: async () => {
+            const response = await api.get<AuthMeResponse>("/auth/me", {
+                withCredentials: true,
+            });
+            return response.data;
+        },
+
+        myPermissions: async () => {
+            const response = await api.get<AuthPermissionsResponse>("/auth/me/permissions", {
                 withCredentials: true,
             });
             return response.data;

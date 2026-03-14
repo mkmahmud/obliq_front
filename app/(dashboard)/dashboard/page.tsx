@@ -24,7 +24,7 @@ export default function DashboardPage() {
     });
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center gap-6">
+        <div className="flex min-h-[calc(100vh-8rem)] flex-col items-center justify-center gap-6">
             <div className="text-center space-y-2">
                 <h1 className="text-4xl font-bold text-primary">Dashboard</h1>
                 <p className="text-muted-foreground">You are logged in.</p>
