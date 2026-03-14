@@ -5,8 +5,10 @@ import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 import { authApi, type LoginPayload } from "@/lib/api/features/auth";
+import { setSessionCookie } from "@/lib/actions/auth-session";
 import { Form } from "../form";
 import { FormCheckboxGroup } from "../form-checkbox-group";
 import { FormInputGroup } from "../form-input-group";
@@ -21,6 +23,7 @@ type LoginFormValues = LoginPayload & {
 };
 
 export function LoginForm({ onSuccess }: LoginFormProps) {
+    const router = useRouter();
     const form = useForm<LoginFormValues>({
         defaultValues: {
             email: "",
@@ -31,16 +34,18 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
 
     const loginMutation = useMutation({
         mutationFn: authApi.login,
-        onSuccess: (response) => {
+        onSuccess: async (response) => {
+            await setSessionCookie(response.data.accessToken);
             toast.success(response.message || "Login successful");
             onSuccess?.();
+            router.push("/dashboard");
         },
         onError: (error) => {
             const axiosError = error as AxiosError<{ message?: string | string[] }>;
             const message = axiosError.response?.data?.message;
 
             if (Array.isArray(message)) {
-                toast.error(message || "Unable to login. Please try again.");
+                toast.error(message[0] || "Unable to login. Please try again.");
                 return;
             }
 
