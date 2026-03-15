@@ -1,8 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useMutation } from "@tanstack/react-query";
+import { LogOut, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import { toast } from "sonner";
 
+import { authApi } from "@/lib/api/features/auth";
+import { clearSessionCookie } from "@/lib/actions/auth-session";
+import { clearAccessToken } from "@/lib/auth/token-store";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -28,12 +34,28 @@ export function DashboardSidebar({
     onToggleCollapse,
     onCloseMobile,
 }: DashboardSidebarProps) {
+    const router = useRouter();
     const { data } = useMyPermissions();
     const dataRecord = data?.data as Record<string, unknown> | undefined;
     const rootRecord = data as Record<string, unknown> | undefined;
     const permissionsPayload = dataRecord?.permissions ?? rootRecord?.permissions ?? data?.data;
     const permissions = normalizePermissionKeys(permissionsPayload);
     const navItems = SIDEBAR_NAV_ITEMS.filter((item) => hasAnyPermission(permissions, item.permission));
+
+    const logoutMutation = useMutation({
+        mutationFn: authApi.logout,
+        onSuccess: async () => {
+            clearAccessToken();
+            await clearSessionCookie();
+            toast.success("Logged out successfully");
+            router.push("/login");
+        },
+        onError: async () => {
+            clearAccessToken();
+            await clearSessionCookie();
+            router.push("/login");
+        },
+    });
 
     return (
         <aside
@@ -102,6 +124,30 @@ export function DashboardSidebar({
                         <div className="px-2 py-3 text-sm text-muted-foreground">No modules assigned yet.</div>
                     )}
                 </nav>
+
+                <div className="border-t border-border p-3">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className={cn(
+                            "w-full justify-start gap-3 rounded-xl",
+                            !isMobile && isCollapsed && "justify-center px-2",
+                        )}
+                        onClick={() => {
+                            logoutMutation.mutate();
+                            if (isMobile) {
+                                onCloseMobile?.();
+                            }
+                        }}
+                        disabled={logoutMutation.isPending}
+                        title="Logout"
+                    >
+                        <LogOut className="size-5 shrink-0" />
+                        {(isMobile || !isCollapsed) && (
+                            <span>{logoutMutation.isPending ? "Logging out..." : "Logout"}</span>
+                        )}
+                    </Button>
+                </div>
             </Card>
         </aside>
     );
