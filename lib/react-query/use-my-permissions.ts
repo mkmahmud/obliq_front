@@ -2,8 +2,6 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { authApi } from "@/lib/api/features/auth";
-import { getAccessToken, setAccessToken } from "@/lib/auth/token-store";
-import { userPermissionsApi } from "@/lib/api/features/user-permissions";
 import { normalizePermissionKeys } from "@/lib/auth/permission-utils";
 
 type MyPermissionsResponse = {
@@ -13,51 +11,10 @@ type MyPermissionsResponse = {
     };
 };
 
-function getAccessTokenFromRefreshResponse(payload: unknown): string | null {
-    if (!payload || typeof payload !== "object") {
-        return null;
-    }
-
-    const record = payload as Record<string, unknown>;
-
-    if (typeof record.accessToken === "string" && record.accessToken) {
-        return record.accessToken;
-    }
-
-    const data = record.data;
-    if (data && typeof data === "object") {
-        const nested = data as Record<string, unknown>;
-        if (typeof nested.accessToken === "string" && nested.accessToken) {
-            return nested.accessToken;
-        }
-    }
-
-    return null;
-}
-
-async function ensureAccessToken() {
-    if (getAccessToken()) {
-        return;
-    }
-
-    try {
-        const refreshPayload = await authApi.refresh();
-        const token = getAccessTokenFromRefreshResponse(refreshPayload);
-
-        if (token) {
-            setAccessToken(token);
-        }
-    } catch {
-        // Ignore and let downstream requests decide auth state.
-    }
-}
-
 export function useMyPermissions() {
     return useQuery({
         queryKey: ["auth", "me", "permissions"],
         queryFn: async () => {
-            await ensureAccessToken();
-
             try {
                 const aggregated = await authApi.myPermissions();
                 const aggregatedRecord = aggregated.data as Record<string, unknown> | undefined;
@@ -74,32 +31,20 @@ export function useMyPermissions() {
                     } satisfies MyPermissionsResponse;
                 }
             } catch {
-                // Continue to user-specific fallback.
-            }
+                try {
+                    const me = await authApi.me();
+                    const roleValue = String(me?.data?.role ?? "").toLowerCase();
 
-            try {
-                await ensureAccessToken();
-
-                const me = await authApi.me();
-                const userId = me.data?.id;
-
-                if (!userId) {
-                    return {
-                        message: "No user found",
-                        data: { permissions: [] },
-                    } satisfies MyPermissionsResponse;
+                    if (roleValue === "admin") {
+                        return {
+                            message: "Permissions inferred from admin role",
+                            data: { permissions: ["*"] },
+                        } satisfies MyPermissionsResponse;
+                    }
+                } catch {
+                    // no-op fallback
                 }
 
-                const userPermissions = await userPermissionsApi.getByUser(userId);
-                const strictKeys = normalizePermissionKeys(userPermissions.data);
-
-                return {
-                    message: userPermissions.message || "User permissions retrieved successfully",
-                    data: {
-                        permissions: strictKeys,
-                    },
-                } satisfies MyPermissionsResponse;
-            } catch {
                 return {
                     message: "Permissions unavailable",
                     data: { permissions: [] },
@@ -107,6 +52,7 @@ export function useMyPermissions() {
             }
         },
         staleTime: 30_000,
-        refetchOnWindowFocus: true,
+        refetchOnWindowFocus: false,
+        retry: false,
     });
 }

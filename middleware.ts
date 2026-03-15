@@ -55,9 +55,11 @@ export async function middleware(request: NextRequest) {
     const isAuthenticated = !!accessToken;
     const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname.startsWith(route));
     const isAuthRedirectRoute = AUTH_REDIRECT_ROUTES.some((route) => pathname.startsWith(route));
+    const hasCallbackUrl = request.nextUrl.searchParams.has("callbackUrl");
+    const hasSessionExpiredReason = request.nextUrl.searchParams.get("reason") === "session-expired";
 
     // Authenticated user trying to access login/register → redirect to dashboard
-    if (isAuthenticated && isAuthRedirectRoute) {
+    if (isAuthenticated && isAuthRedirectRoute && !hasCallbackUrl && !hasSessionExpiredReason) {
         return NextResponse.redirect(new URL(DEFAULT_AUTHENTICATED_REDIRECT, request.url));
     }
 

@@ -1,7 +1,10 @@
 import axios, { type AxiosInstance, type CreateAxiosDefaults } from "axios";
-import { getAccessToken } from "@/lib/auth/token-store";
+import { clearAccessToken, getAccessToken } from "@/lib/auth/token-store";
 
 export type BaseApi = AxiosInstance;
+type RequestConfigWithSkip = {
+    skipUnauthorizedRedirect?: boolean;
+};
 
 const defaultConfig: CreateAxiosDefaults = {
     baseURL: process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api",
@@ -12,6 +15,8 @@ const defaultConfig: CreateAxiosDefaults = {
 };
 
 export function createBaseApi(config?: CreateAxiosDefaults): BaseApi {
+    let hasRedirectedOnUnauthorized = false;
+
     const client = axios.create({
         ...defaultConfig,
         ...config,
@@ -22,13 +27,11 @@ export function createBaseApi(config?: CreateAxiosDefaults): BaseApi {
     });
 
     client.interceptors.request.use((requestConfig) => {
-        if (typeof window !== "undefined") {
-            const token = getAccessToken();
+        const token = getAccessToken();
 
-            if (token) {
-                requestConfig.headers = requestConfig.headers ?? {};
-                requestConfig.headers.Authorization = `Bearer ${token}`;
-            }
+        if (token) {
+            requestConfig.headers = requestConfig.headers ?? {};
+            requestConfig.headers.Authorization = `Bearer ${token}`;
         }
 
         return requestConfig;
@@ -37,6 +40,25 @@ export function createBaseApi(config?: CreateAxiosDefaults): BaseApi {
     client.interceptors.response.use(
         (response) => response,
         async (error) => {
+            if (typeof window !== "undefined" && error?.response?.status === 401) {
+                clearAccessToken();
+                const shouldSkipRedirect = Boolean((error?.config as RequestConfigWithSkip | undefined)?.skipUnauthorizedRedirect);
+                const currentPath = window.location.pathname;
+                const isAuthRoute = currentPath.startsWith("/login") || currentPath.startsWith("/register");
+
+                if (!shouldSkipRedirect && !isAuthRoute && !hasRedirectedOnUnauthorized) {
+                    hasRedirectedOnUnauthorized = true;
+                    window.dispatchEvent(
+                        new CustomEvent("app:unauthorized", {
+                            detail: {
+                                callbackUrl: currentPath,
+                                reason: "session-expired",
+                            },
+                        }),
+                    );
+                }
+            }
+
             return Promise.reject(error);
         },
     );

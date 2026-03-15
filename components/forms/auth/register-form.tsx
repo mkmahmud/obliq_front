@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
 
 import { authApi, type RegisterPayload } from "@/lib/api/features/auth";
 import { setSessionCookie } from "@/lib/actions/auth-session";
@@ -20,8 +19,27 @@ type RegisterFormProps = {
 
 type RegisterFormValues = RegisterPayload;
 
+function resolveAccessToken(payload: unknown): string | null {
+    if (!payload || typeof payload !== "object") {
+        return null;
+    }
+
+    const record = payload as Record<string, unknown>;
+    const direct = record.accessToken;
+    if (typeof direct === "string" && direct) {
+        return direct;
+    }
+
+    const data = record.data;
+    if (!data || typeof data !== "object") {
+        return null;
+    }
+
+    const nested = (data as Record<string, unknown>).accessToken;
+    return typeof nested === "string" && nested ? nested : null;
+}
+
 export function RegisterForm({ onSuccess }: RegisterFormProps) {
-    const router = useRouter();
     const form = useForm<RegisterFormValues>({
         defaultValues: {
             firstName: "",
@@ -34,11 +52,23 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
     const registerMutation = useMutation({
         mutationFn: authApi.register,
         onSuccess: async (response) => {
-            setAccessToken(response.data.accessToken);
-            await setSessionCookie(response.data.accessToken);
+            let accessToken = resolveAccessToken(response);
+
+            if (!accessToken) {
+                const refreshPayload = await authApi.refresh();
+                accessToken = resolveAccessToken(refreshPayload);
+            }
+
+            if (!accessToken) {
+                toast.error("Register succeeded but session token was not returned.");
+                return;
+            }
+
+            setAccessToken(accessToken);
+            await setSessionCookie(accessToken);
             toast.success(response.message || "Account created successfully");
             onSuccess?.();
-            router.push("/dashboard");
+            window.location.assign("/dashboard");
         },
         onError: (error) => {
             const axiosError = error as AxiosError<{ message?: string | string[] }>;

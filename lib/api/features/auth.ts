@@ -96,7 +96,8 @@ export function createAuthApi(api: BaseApi = baseApi) {
         myPermissions: async () => {
             const response = await api.get<AuthPermissionsResponse>("/auth/me/permissions", {
                 withCredentials: true,
-            });
+                skipUnauthorizedRedirect: true,
+            } as { withCredentials: boolean; skipUnauthorizedRedirect: boolean });
             return response.data;
         },
 

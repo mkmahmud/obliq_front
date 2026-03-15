@@ -22,9 +22,17 @@ export default function DashboardLayout({
     const myPermissionsQuery = useMyPermissions();
 
     const requiredPermission = useMemo(() => getRequiredPermission(pathname), [pathname]);
+    const isPermissionCheckInProgress =
+        Boolean(requiredPermission) &&
+        requiredPermission !== "dashboard.view" &&
+        myPermissionsQuery.isLoading;
 
     useEffect(() => {
         if (!requiredPermission) {
+            return;
+        }
+
+        if (requiredPermission === "dashboard.view") {
             return;
         }
 
@@ -33,6 +41,10 @@ export default function DashboardLayout({
         }
 
         const permissions = myPermissionsQuery.data?.data?.permissions ?? [];
+
+        if (permissions.length === 0) {
+            return;
+        }
 
         if (!hasAnyPermission(permissions, requiredPermission)) {
             router.replace("/403");
@@ -86,7 +98,15 @@ export default function DashboardLayout({
                         </div>
                     </header>
 
-                    <main className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
+                    <main className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">
+                        {isPermissionCheckInProgress ? (
+                            <div className="flex min-h-[240px] items-center justify-center">
+                                <p className="text-sm text-muted-foreground">Checking page access...</p>
+                            </div>
+                        ) : (
+                            children
+                        )}
+                    </main>
                 </div>
             </div>
         </div>
