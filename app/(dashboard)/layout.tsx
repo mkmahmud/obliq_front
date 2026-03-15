@@ -1,9 +1,12 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { Menu } from "lucide-react";
 
+import { getRequiredPermission } from "@/lib/auth/route-permissions";
+import { hasAnyPermission } from "@/lib/auth/permission-utils";
+import { useMyPermissions } from "@/lib/react-query/use-my-permissions";
 import { Button } from "@/components/ui/button";
 import { DashboardSidebar } from "../../components/dashboard/sidebar";
 
@@ -13,8 +16,35 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     const pathname = usePathname();
+    const router = useRouter();
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+    const myPermissionsQuery = useMyPermissions();
+
+    const requiredPermission = useMemo(() => getRequiredPermission(pathname), [pathname]);
+
+    useEffect(() => {
+        if (!requiredPermission) {
+            return;
+        }
+
+        if (myPermissionsQuery.isLoading || myPermissionsQuery.isFetching || myPermissionsQuery.isError) {
+            return;
+        }
+
+        const permissions = myPermissionsQuery.data?.data?.permissions ?? [];
+
+        if (!hasAnyPermission(permissions, requiredPermission)) {
+            router.replace("/403");
+        }
+    }, [
+        myPermissionsQuery.data?.data?.permissions,
+        myPermissionsQuery.isError,
+        myPermissionsQuery.isFetching,
+        myPermissionsQuery.isLoading,
+        requiredPermission,
+        router,
+    ]);
 
     return (
         <div className="h-screen overflow-hidden bg-background text-foreground">
