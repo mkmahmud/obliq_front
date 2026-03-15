@@ -5,6 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { authApi } from "@/lib/api/features/auth";
 import { clearSessionCookie } from "@/lib/actions/auth-session";
+import { clearAccessToken } from "@/lib/auth/token-store";
 import { Button } from "@/components/ui/button";
 
 export default function DashboardPage() {
@@ -13,11 +14,13 @@ export default function DashboardPage() {
     const logoutMutation = useMutation({
         mutationFn: authApi.logout,
         onSuccess: async () => {
+            clearAccessToken();
             await clearSessionCookie();
             toast.success("Logged out successfully");
             router.push("/login");
         },
         onError: async () => {
+            clearAccessToken();
             await clearSessionCookie();
             router.push("/login");
         },

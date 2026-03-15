@@ -1,4 +1,5 @@
 import axios, { type AxiosInstance, type CreateAxiosDefaults } from "axios";
+import { getAccessToken } from "@/lib/auth/token-store";
 
 export type BaseApi = AxiosInstance;
 
@@ -18,6 +19,19 @@ export function createBaseApi(config?: CreateAxiosDefaults): BaseApi {
             ...defaultConfig.headers,
             ...config?.headers,
         },
+    });
+
+    client.interceptors.request.use((requestConfig) => {
+        if (typeof window !== "undefined") {
+            const token = getAccessToken();
+
+            if (token) {
+                requestConfig.headers = requestConfig.headers ?? {};
+                requestConfig.headers.Authorization = `Bearer ${token}`;
+            }
+        }
+
+        return requestConfig;
     });
 
     client.interceptors.response.use(

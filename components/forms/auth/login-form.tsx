@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 
 import { authApi, type LoginPayload } from "@/lib/api/features/auth";
 import { setSessionCookie } from "@/lib/actions/auth-session";
+import { setAccessToken } from "@/lib/auth/token-store";
 import { Form } from "../form";
 import { FormCheckboxGroup } from "../form-checkbox-group";
 import { FormInputGroup } from "../form-input-group";
@@ -35,6 +36,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
     const loginMutation = useMutation({
         mutationFn: authApi.login,
         onSuccess: async (response) => {
+            setAccessToken(response.data.accessToken);
             await setSessionCookie(response.data.accessToken);
             toast.success(response.message || "Login successful");
             onSuccess?.();

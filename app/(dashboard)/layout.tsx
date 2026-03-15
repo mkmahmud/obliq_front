@@ -17,8 +17,8 @@ export default function DashboardLayout({
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
     return (
-        <div className="min-h-screen bg-background text-foreground">
-            <div className="flex min-h-screen">
+        <div className="h-screen overflow-hidden bg-background text-foreground">
+            <div className="flex h-full">
                 <DashboardSidebar
                     pathname={pathname}
                     isCollapsed={isCollapsed}
@@ -40,8 +40,8 @@ export default function DashboardLayout({
                     onCloseMobile={() => setIsMobileSidebarOpen(false)}
                 />
 
-                <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-                    <header className="sticky top-0 z-20 h-16 border-b border-border bg-background/90 backdrop-blur">
+                <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+                    <header className="z-20 h-16 shrink-0 border-b border-border bg-background/90 backdrop-blur">
                         <div className="flex h-full items-center gap-2 px-4 lg:px-6">
                             <Button
                                 variant="ghost"
@@ -56,7 +56,7 @@ export default function DashboardLayout({
                         </div>
                     </header>
 
-                    <main className="flex-1 p-4 lg:p-6">{children}</main>
+                    <main className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
                 </div>
             </div>
         </div>

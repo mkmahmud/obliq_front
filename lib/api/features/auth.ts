@@ -55,6 +55,16 @@ export type AuthPermissionsResponse = {
     };
 };
 
+export type RefreshResponse = {
+    message?: string;
+    accessToken?: string;
+    data?: {
+        accessToken?: string;
+        [key: string]: unknown;
+    };
+    [key: string]: unknown;
+};
+
 export function createAuthApi(api: BaseApi = baseApi) {
     return {
         login: async (payload: LoginPayload) => {
@@ -85,6 +95,13 @@ export function createAuthApi(api: BaseApi = baseApi) {
 
         myPermissions: async () => {
             const response = await api.get<AuthPermissionsResponse>("/auth/me/permissions", {
+                withCredentials: true,
+            });
+            return response.data;
+        },
+
+        refresh: async () => {
+            const response = await api.post<RefreshResponse>("/auth/refresh", {}, {
                 withCredentials: true,
             });
             return response.data;

@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { SIDEBAR_NAV_ITEMS } from "@/lib/auth/nav-items";
 import { hasAnyPermission, normalizePermissionKeys } from "@/lib/auth/permission-utils";
 import { useMyPermissions } from "@/lib/react-query/use-my-permissions";
+import Image from "next/image";
 
 type DashboardSidebarProps = {
     pathname: string;
@@ -46,9 +47,10 @@ export function DashboardSidebar({
         >
             <Card className="h-full gap-0 rounded-none border-r border-border bg-card py-0">
                 <div className="flex h-16 items-center justify-between border-b border-border px-4">
-                    <span className={cn("text-lg font-semibold text-primary", !isMobile && isCollapsed && "sr-only")}>
-                        Obliq
-                    </span>
+
+
+                    <Image src="/logo1.png" alt="Logo" width={70} height={70} className={cn("text-lg font-semibold text-primary", !isMobile && isCollapsed && "sr-only")} />
+
 
                     {isMobile ? (
                         <Button

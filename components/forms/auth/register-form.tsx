@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 
 import { authApi, type RegisterPayload } from "@/lib/api/features/auth";
 import { setSessionCookie } from "@/lib/actions/auth-session";
+import { setAccessToken } from "@/lib/auth/token-store";
 import { Form } from "../form";
 import { FormInputGroup } from "../form-input-group";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
     const registerMutation = useMutation({
         mutationFn: authApi.register,
         onSuccess: async (response) => {
+            setAccessToken(response.data.accessToken);
             await setSessionCookie(response.data.accessToken);
             toast.success(response.message || "Account created successfully");
             onSuccess?.();

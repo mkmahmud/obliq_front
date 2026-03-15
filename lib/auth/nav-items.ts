@@ -21,7 +21,7 @@ export type SidebarNavItem = {
 export const SIDEBAR_NAV_ITEMS: SidebarNavItem[] = [
     { label: "Dashboard", href: "/dashboard", permission: "dashboard", icon: LayoutDashboard },
     { label: "Users", href: "/users", permission: "users", icon: Users },
-    { label: "Permissions", href: "/permissions", permission: "permissions", icon: ShieldCheck },
+    { label: "All Permissions", href: "/permissions", permission: "permission", icon: ShieldCheck },
     { label: "Leads", href: "/leads", permission: "leads", icon: Briefcase },
     { label: "Tasks", href: "/tasks", permission: "tasks", icon: CheckSquare },
     { label: "Reports", href: "/reports", permission: "reports", icon: BarChart3 },

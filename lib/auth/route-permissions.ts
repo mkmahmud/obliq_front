@@ -1,7 +1,7 @@
 export const ROUTE_PERMISSIONS: Array<{ pattern: RegExp; permission: string }> = [
     { pattern: /^\/dashboard(?:\/.*)?$/, permission: "dashboard" },
     { pattern: /^\/users(?:\/.*)?$/, permission: "users" },
-    { pattern: /^\/permissions(?:\/.*)?$/, permission: "permissions" },
+    { pattern: /^\/permissions(?:\/.*)?$/, permission: "permission" },
     { pattern: /^\/leads(?:\/.*)?$/, permission: "leads" },
     { pattern: /^\/tasks(?:\/.*)?$/, permission: "tasks" },
     { pattern: /^\/reports(?:\/.*)?$/, permission: "reports" },
