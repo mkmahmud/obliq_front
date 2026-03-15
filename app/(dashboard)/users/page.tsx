@@ -6,14 +6,15 @@ import { toast } from "sonner";
 
 import {
     usersApi,
-    type CreateUserPayload,
     type UpdateUserPayload,
     type UserItem,
 } from "@/lib/api/features/users";
+import { authApi } from "@/lib/api/features/auth";
 import { permissionsApi } from "@/lib/api/features/permissions";
 import { userPermissionsApi } from "@/lib/api/features/user-permissions";
 import {
     extractPermissionRefs,
+    extractRoleName,
     getApiErrorMessage,
     toCreatePayload,
     toUpdatePayload,
@@ -22,13 +23,45 @@ import { type UserFormValues } from "@/components/forms/users/user-form";
 import { UserPermissionsModal } from "@/components/dashboard/user-permissions-modal";
 import { UserCreateEditCard } from "@/components/dashboard/user-create-edit-card";
 import { UserListCard } from "@/components/dashboard/user-list-card";
+import { ManageManagerModal } from "@/components/dashboard/manage-manager-modal";
+
+function getUserFullName(user: UserItem) {
+    return `${user.firstName} ${user.lastName}`.trim();
+}
+
+function getCurrentManagerName(user: UserItem, managers: UserItem[]) {
+    const linkedManager = managers.find((manager) => manager.id === user.managerId);
+    
+    if (linkedManager) {
+        return getUserFullName(linkedManager);
+    }
+
+    const nestedManager = user.manager;
+    if (nestedManager && typeof nestedManager === "object") {
+        const managerRecord = nestedManager as Record<string, unknown>;
+        const firstName = managerRecord.firstName;
+        const lastName = managerRecord.lastName;
+        if (typeof firstName === "string" || typeof lastName === "string") {
+            return `${typeof firstName === "string" ? firstName : ""} ${typeof lastName === "string" ? lastName : ""}`.trim();
+        }
+    }
+
+    return null;
+}
 
 export default function UsersPage() {
     const queryClient = useQueryClient();
     const [editingUser, setEditingUser] = useState<UserItem | null>(null);
     const [permissionUser, setPermissionUser] = useState<UserItem | null>(null);
+    const [managerUser, setManagerUser] = useState<UserItem | null>(null);
+    const [selectedManagerId, setSelectedManagerId] = useState<string>("");
     const [selectedPermissionIds, setSelectedPermissionIds] = useState<string[]>([]);
     const [initialPermissionIds, setInitialPermissionIds] = useState<string[]>([]);
+
+    const meQuery = useQuery({
+        queryKey: ["auth", "me"],
+        queryFn: authApi.me,
+    });
 
     const usersQuery = useQuery({
         queryKey: ["users", "list"],
@@ -70,6 +103,20 @@ export default function UsersPage() {
             toast.success(response.message || "User updated successfully");
             queryClient.invalidateQueries({ queryKey: ["users", "list"] });
             setEditingUser(null);
+        },
+        onError: (error) => {
+            toast.error(getApiErrorMessage(error));
+        },
+    });
+
+    const updateManagerMutation = useMutation({
+        mutationFn: ({ userId, managerId }: { userId: string; managerId: string }) =>
+            usersApi.update(userId, { managerId }),
+        onSuccess: (response) => {
+            toast.success(response.message || "Manager updated successfully");
+            queryClient.invalidateQueries({ queryKey: ["users", "list"] });
+            setManagerUser(null);
+            setSelectedManagerId("");
         },
         onError: (error) => {
             toast.error(getApiErrorMessage(error));
@@ -127,6 +174,21 @@ export default function UsersPage() {
     });
 
     const users = useMemo(() => usersQuery.data?.data ?? [], [usersQuery.data?.data]);
+    const isAdmin = useMemo(() => {
+        const role = meQuery.data?.data?.role;
+        return typeof role === "string" && role.toLowerCase() === "admin";
+    }, [meQuery.data?.data?.role]);
+    const managers = useMemo(
+        () => users.filter((user) => extractRoleName(user.role).toLowerCase() === "manager"),
+        [users],
+    );
+    const currentManagerName = useMemo(() => {
+        if (!managerUser) {
+            return null;
+        }
+
+        return getCurrentManagerName(managerUser, managers);
+    }, [managerUser, managers]);
 
     const availablePermissions = useMemo(() => permissionsQuery.data?.data ?? [], [permissionsQuery.data?.data]);
     const availablePermissionIdSet = useMemo(
@@ -191,6 +253,11 @@ export default function UsersPage() {
         setInitialPermissionIds([]);
     };
 
+    const openManageManagerModal = (user: UserItem) => {
+        setManagerUser(user);
+        setSelectedManagerId(typeof user.managerId === "string" ? user.managerId : "");
+    };
+
     const togglePermission = (permissionId: string, checked: boolean) => {
         setSelectedPermissionIds((previous) => {
             if (checked) {
@@ -237,6 +304,17 @@ export default function UsersPage() {
         });
     };
 
+    const handleSaveManager = () => {
+        if (!managerUser || !selectedManagerId) {
+            return;
+        }
+
+        updateManagerMutation.mutate({
+            userId: managerUser.id,
+            managerId: selectedManagerId,
+        });
+    };
+
     return (
         <div className="space-y-6">
             <div>
@@ -247,11 +325,13 @@ export default function UsersPage() {
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
                 <UserListCard
                     users={users}
+                    isAdmin={isAdmin}
                     isLoading={usersQuery.isLoading}
                     isError={usersQuery.isError}
                     isStatusMutationPending={isStatusMutationPending}
                     onEdit={setEditingUser}
                     onOpenPermissions={openPermissionModal}
+                    onManageManager={openManageManagerModal}
                     onStatusAction={handleStatusAction}
                 />
 
@@ -279,6 +359,20 @@ export default function UsersPage() {
                 }}
                 onTogglePermission={togglePermission}
                 onSave={handleSaveUserPermissions}
+            />
+
+            <ManageManagerModal
+                user={managerUser}
+                managers={managers}
+                selectedManagerId={selectedManagerId}
+                currentManagerName={currentManagerName}
+                isSaving={updateManagerMutation.isPending}
+                onClose={() => {
+                    setManagerUser(null);
+                    setSelectedManagerId("");
+                }}
+                onSelectManager={setSelectedManagerId}
+                onSave={handleSaveManager}
             />
         </div>
     );

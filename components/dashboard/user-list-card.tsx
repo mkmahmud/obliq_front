@@ -7,21 +7,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 type UserListCardProps = {
     users: UserItem[];
+    isAdmin: boolean;
     isLoading: boolean;
     isError: boolean;
     isStatusMutationPending: boolean;
     onEdit: (user: UserItem) => void;
     onOpenPermissions: (user: UserItem) => void;
+    onManageManager: (user: UserItem) => void;
     onStatusAction: (action: "suspend" | "ban" | "activate", user: UserItem) => void;
 };
 
 export function UserListCard({
     users,
+    isAdmin,
     isLoading,
     isError,
     isStatusMutationPending,
     onEdit,
     onOpenPermissions,
+    onManageManager,
     onStatusAction,
 }: UserListCardProps) {
     return (
@@ -56,6 +60,17 @@ export function UserListCard({
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-2">
+                                    {isAdmin && ["agent", "customer"].includes(extractRoleName(user.role).toLowerCase()) ? (
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="w-auto"
+                                            onClick={() => onManageManager(user)}
+                                        >
+                                            Manager
+                                        </Button>
+                                    ) : null}
+
                                     <Button
                                         size="sm"
                                         variant="outline"
