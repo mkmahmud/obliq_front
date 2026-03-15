@@ -35,10 +35,10 @@ const MODULE_OPTIONS = [
 ];
 
 const ACTION_OPTIONS = [
-    { value: "create", label: "Create" },
-    { value: "read", label: "Read" },
-    { value: "update", label: "Update" },
-    { value: "delete", label: "Delete" },
+    { value: "view", label: "View" },
+    { value: "manage", label: "Manage" },
+    { value: "access", label: "Access" }
+
 ];
 
 function getActionFromKey(key?: string) {
@@ -79,15 +79,35 @@ export function PermissionForm({
     }, [form, initialValues?.description, initialValues?.key, initialValues?.module]);
 
     useEffect(() => {
-        if (selectedModule && selectedAction) {
-            form.setValue("key", `${selectedModule}.${selectedAction}`, {
+        if (!selectedModule || !selectedAction) {
+            form.setValue("key", "", {
                 shouldDirty: true,
             });
+            return;
         }
+
+        const nextKey = `${selectedModule}.${selectedAction}`;
+        form.setValue("key", nextKey, {
+            shouldDirty: true,
+        });
     }, [form, selectedAction, selectedModule]);
 
+    const handleSubmit = (values: PermissionFormValues) => {
+        const moduleValue = values.module.trim();
+        const actionValue = values.action.trim();
+
+        const normalizedValues: PermissionFormValues = {
+            ...values,
+            module: moduleValue,
+            action: actionValue,
+            key: moduleValue && actionValue ? `${moduleValue}.${actionValue}` : "",
+        };
+
+        onSubmit(normalizedValues);
+    };
+
     return (
-        <Form form={form} onSubmit={onSubmit} className="space-y-4">
+        <Form form={form} onSubmit={handleSubmit} className="space-y-4">
             <FormSelectGroup
                 label="Module"
                 name="module"
@@ -113,7 +133,9 @@ export function PermissionForm({
             <div className="space-y-2.5">
                 <p className="text-sm font-medium text-[#646B78]">Generated Key</p>
                 <div className="h-11 rounded-xl border border-[#E7E8EB] bg-white px-3 text-sm text-foreground flex items-center">
-                    {selectedModule && selectedAction ? `${selectedModule}.${selectedAction}` : "Select module and action"}
+                    {selectedModule && selectedAction
+                        ? `${selectedModule}.${selectedAction}`
+                        : "Select module and action"}
                 </div>
             </div>
 

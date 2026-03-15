@@ -71,7 +71,7 @@ export async function middleware(request: NextRequest) {
     if (isAuthenticated && !isPublicRoute) {
         const requiredPermission = getRequiredPermission(pathname);
 
-        if (requiredPermission === "dashboard") {
+        if (requiredPermission === "dashboard.view") {
             return NextResponse.next();
         }
 
